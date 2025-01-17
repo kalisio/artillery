@@ -56,7 +56,7 @@ const socketioItems = {
         concat: Joi.boolean(),
         data: Joi.any()
       }),
-      Joi.array().items(Joi.string())
+      Joi.array().items(Joi.alternatives(Joi.object(), Joi.string()))
     ),
     otherwise: Joi.any()
   })
