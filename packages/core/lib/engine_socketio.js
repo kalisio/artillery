@@ -216,6 +216,19 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
         ]
       : Array.from(requestSpec.emit).map((arg) => template(arg, context));
 
+    if (requestSpec.beforeEmit) {
+      let processFunc = self.config.processor[requestSpec.beforeEmit];
+      if (processFunc) {
+        processFunc(outgoing, context, ee)
+        debug(`Function "${requestSpec.beforeEmit}" ran`, outgoing);
+        debug('processor: %o', self.config.processor)
+      } else {
+        debug(`Function "${requestSpec.beforeEmit}" not defined`);
+        debug('processor: %o', self.config.processor);
+        ee.emit('error', `Undefined function "${requestSpec.beforeEmit}"`);
+      }
+    }
+
     const endCallback = function (err, context, needEmit) {
       if (err) {
         debug(err);
