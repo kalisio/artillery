@@ -219,9 +219,9 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
     if (requestSpec.beforeEmit) {
       let processFunc = self.config.processor[requestSpec.beforeEmit];
       if (processFunc) {
-        processFunc(outgoing, context, ee)
+        processFunc(outgoing, context, ee);
         debug(`Function "${requestSpec.beforeEmit}" ran`, outgoing);
-        debug('processor: %o', self.config.processor)
+        debug('processor: %o', self.config.processor);
       } else {
         debug(`Function "${requestSpec.beforeEmit}" not defined`);
         debug('processor: %o', self.config.processor);
@@ -236,6 +236,25 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
 
       if (isAcknowledgeRequired(requestSpec)) {
         const ackCallback = function (...args) {
+          if (requestSpec.acknowledge.function) {
+            let processFunc = self.config.processor[requestSpec.acknowledge.function];
+            if (processFunc) {
+              try {
+                debug(`Function "${requestSpec.acknowledge.function}" to be run`);
+                debug('processor: %o', self.config.processor);
+                processFunc(args, context, ee);
+                return callback(null, context);
+              } catch (error) {
+                ee.emit('error', 'acknowledgement_failed');
+                return callback(error, context);
+              }
+            } else {
+              debug(`Function "${requestSpec.acknowledge.function}" not defined`);
+              debug('processor: %o', self.config.processor);
+              ee.emit('error', `Undefined function "${requestSpec.acknowledge.function}"`);
+              return callback(null, context);
+            }
+          }
           const response = {
             data: template(
               requestSpec.acknowledge.data || requestSpec.acknowledge.args,
@@ -297,6 +316,25 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
 
       socketio.on(response.channel, function receive(...args) {
         responseData.push(...args);
+        if (requestSpec.response.function) {
+          let processFunc = self.config.processor[requestSpec.response.function];
+          if (processFunc) {
+            try {
+              processFunc(args, context, ee);
+              return callback(null, context);
+            } catch (error) {
+              ee.emit('error', 'response_validation_failed');
+              return callback(error, context);
+            }
+            debug(`Function "${requestSpec.response.function}" ran`);
+            debug('processor: %o', self.config.processor);
+          } else {
+            debug(`Function "${requestSpec.response.function}" not defined`);
+            debug('processor: %o', self.config.processor);
+            ee.emit('error', `Undefined function "${requestSpec.response.function}"`);
+            return callback(null, context);
+          }
+        }
         if (isValid(responseData, response)) {
           done = true;
 
