@@ -243,6 +243,7 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
                 debug(`Function "${requestSpec.acknowledge.function}" to be run`);
                 debug('processor: %o', self.config.processor);
                 processFunc(args, context, ee);
+                markEndTime(ee, context, startedAt);
                 return callback(null, context);
               } catch (error) {
                 ee.emit('error', 'acknowledgement_failed');
@@ -321,6 +322,7 @@ SocketIoEngine.prototype.step = function (requestSpec, ee) {
           if (processFunc) {
             try {
               processFunc(args, context, ee);
+              markEndTime(ee, context, startedAt);
               return callback(null, context);
             } catch (error) {
               ee.emit('error', 'response_validation_failed');
